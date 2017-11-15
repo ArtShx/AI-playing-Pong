@@ -12,7 +12,7 @@ control = False
 action = [-10, 0, 10]
 
 # input, nb_actions, gamma
-brain = Dqn(2, 3, 0.9, 2)
+brain = Dqn(3, 3, 0.9, 5)
 last_reward_1 = 0
 scores_1 = []
 
@@ -49,8 +49,8 @@ pygame.display.set_caption('Pong played by AI')
 def ball_init(right):
     global ball_pos, ball_vel # these are vectors stored as lists
     ball_pos = [WIDTH//2,HEIGHT//2]
-    horz = random.randrange(2,4)
-    vert = random.randrange(1,3)
+    horz = random.randrange(3,5)
+    vert = random.randrange(3,5)
     
     if right == False:
         horz = - horz
@@ -84,6 +84,7 @@ def draw(canvas):
     pygame.draw.line(canvas, WHITE, [WIDTH - PAD_WIDTH, 0],[WIDTH - PAD_WIDTH, HEIGHT], 1)
     pygame.draw.circle(canvas, WHITE, [WIDTH//2, HEIGHT//2], 70, 1)
 
+    
     # update paddle's vertical position, keep paddle on the screen
     if paddle1_pos[1] > HALF_PAD_HEIGHT and paddle1_pos[1] < HEIGHT - HALF_PAD_HEIGHT:
         paddle1_pos[1] += paddle1_vel
@@ -91,6 +92,10 @@ def draw(canvas):
         paddle1_pos[1] += paddle1_vel
     elif paddle1_pos[1] == HEIGHT - HALF_PAD_HEIGHT and paddle1_vel < 0:
         paddle1_pos[1] += paddle1_vel
+    if paddle1_pos[1] <= 40:
+        paddle1_pos[1] -= paddle1_vel
+    if paddle1_pos[1] >= 360:
+        paddle1_pos[1] -= paddle1_vel
     
     if paddle2_pos[1] > HALF_PAD_HEIGHT and paddle2_pos[1] < HEIGHT - HALF_PAD_HEIGHT:
         paddle2_pos[1] += paddle2_vel
@@ -122,11 +127,11 @@ def draw(canvas):
         ball_vel[0] = -ball_vel[0]
         ball_vel[0] *= 1.1
         ball_vel[1] *= 1.1
-        last_reward_1 = 1
+        last_reward_1 = 100
     elif int(ball_pos[0]) <= BALL_RADIUS + PAD_WIDTH:
         # hit left wall
         r_score += 1
-        last_reward_1 = -1
+        last_reward_1 = -100
         ball_init(True)
         
     if int(ball_pos[0]) >= WIDTH + 1 - BALL_RADIUS - PAD_WIDTH and int(ball_pos[1]) in range(paddle2_pos[1] - HALF_PAD_HEIGHT,paddle2_pos[1] + HALF_PAD_HEIGHT,1):
@@ -150,8 +155,7 @@ def draw(canvas):
     
     
     #last_reward_1 -= (80 + paddle1_pos[1] - ball_pos[1]) * 0.00005
-    last_reward_1 -= 0.0052
-    last_signal_1 = [ball_pos[1], paddle1_pos[1]]
+    last_signal_1 = [ball_pos[1], ball_pos[0], paddle1_pos[1]]
     action_1 = brain.update(last_reward_1, last_signal_1)
     
     scores_1.append(brain.score())
@@ -160,16 +164,21 @@ def draw(canvas):
         paddle1_vel = action[action_1]
         msgControl = "False"
 
-    paddle2_vel = random.choice(action)
+    paddle2_pos[1] = ball_pos[1]
+    #paddle2_vel = random.choice(action)
     
     
     myfont3 = pygame.font.SysFont("Arial", 15)
     label3 = myfont3.render(msgControl, 1, (255,255,0))
-    canvas.blit(label3, (50, 380))
+    canvas.blit(label3, (50, 360))
     
     myfont4 = pygame.font.SysFont("Arial", 15)
     label4 = myfont4.render("Last Reward "+str(last_reward_1), 1, (255,255,0))
-    canvas.blit(label4, (100, 380))
+    canvas.blit(label4, (100, 360))
+    
+    myfont5 = pygame.font.SysFont("Arial", 15)
+    label5 = myfont5.render("1: Control,  8: Show,  9: Load,  0: Save/Show,  L: Put paddle on middle", 1, (255,255,0))
+    canvas.blit(label5, (50, 380))
     
     #paddle2_pos[1] = ball_pos[1]
 
@@ -191,7 +200,7 @@ def keydown(event):
         brain.save()
         plt.plot(scores_1)
         plt.show()
-    elif event.key == K_9:
+    elif event.key == K_9: 
         brain.load()
     elif event.key == K_8:
         plt.plot(scores_1)
